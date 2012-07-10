@@ -1,208 +1,120 @@
-from decider.cleaner import clean, PUNCTUATION
+import types
+
+from optimizer import compact
+from tokens import *
 
 
-class PlaceholderToken(object):
-    """A placeholder for a component of the user's query."""
+class QueryTooLongException(Exception):
+    """
+    This exception is thrown when a query is too long to parse in a reasonable
+    amount of time. When this exception is encountered, the client should be
+    presented with a message asking them to rephrase their question for
+    brevity.
+    """
+    MAX_QUERY_LENGTH = 20
 
-    def __init__(self, name):
-        self.name = name
+
+PUNCTUATION = ":;,.?!()"
+ABBREV_PUNCTUATION = ":;,.?!"
+
+
+class ExpressionParser(object):
+
+    def __init__(self, expression, expressive=True):
+        print "Parsing %s" % expression
+        self.expression = expression
+        self.expressive = expressive
+        self.token_stack = []
+
+        self.char_gen = None
+        self.char_gen = self.chars()
+        self.buffer = []
+
         self.tokens = []
 
+    def chars(self):
+        if self.char_gen is not None:
+            return self.char_gen
+        return iter(self.expression)
 
-class Expression(object):
-    """A representation of a query used for pattern matching."""
+    def push_buffer(self, char):
+        self.buffer.append(char)
 
-    def __init__(self, pattern, method=None, raw=None):
-        self.pattern = pattern
-        self.method = method
-        self.raw = raw
+    def pop_buffer_token(self):
+        if not self.buffer:
+            return
+        self.push_token(self.buffer)
+        self.buffer = []
 
-    def matches(self, tokens, pattern_offset=0, prepend=None):
-        if prepend is None:
-            prepend = ()
+    def push_token(self, token):
+        if isinstance(token, list):
+            token = "".join(token)
+        if isinstance(token, types.StringTypes):
+            if token.startswith("{{") and token.endswith("}}"):
+                token = PlaceholderToken(token[2:-2])
+            elif token.startswith("{") and token.endswith("}"):
+                token = SinglePlaceholderToken(token[1:-1])
+            else:
+                token = Token(token)
+        if self.token_stack:
+            return self.token_stack[-1].push_token(token)
+        self.tokens.append(token)
 
-        if pattern_offset:
-            print "New offset:", pattern_offset
-            print "New tokens:", tokens
-            print "New pattern tokens:", prepend + tuple(self.pattern[pattern_offset:])
-        enumer_tokens = enumerate(tokens)
-        placeholders = {}
-        token_index = 0
+    def parse(self):
+        chars = self.chars()
 
-        toks_to_iterate = prepend + tuple(self.pattern[pattern_offset:])
-        if not toks_to_iterate:
-            return None
+        token_triggers = {"(": MultiToken, "[": OptionalToken}
 
-        for pattern_index, pattern_token in enumerate(toks_to_iterate):
-            if isinstance(pattern_token, (list, tuple)):
-                print "Hit subtoken block:", pattern_token
-                for subtoken in pattern_token:
-                    print "Testing subtoken", subtoken
-                    matches = self.matches(
-                            tokens[token_index + 1:],
-                            pattern_offset=pattern_offset + pattern_index -
-                                               len(prepend) + 1,
-                            prepend=subtoken)
-                    if matches is not None:
-                        placeholders.update(matches)
-                        return placeholders
-                return None
+        for c in chars:
+            if self.expressive:
+                if self.token_stack:
+                    token_action = self.token_stack[-1].ends(c)
 
-            if isinstance(pattern_token, PlaceholderToken):
-                placeholders[pattern_token.name] = []
-                print "Found placeholder, matching deeper..."
-                # Start churning user tokens until we can start forward
-                # matching.
-                for i, user_token in enumer_tokens:
-                    matches = self.matches(
-                        tokens[i:],
-                        pattern_offset=pattern_offset + pattern_index -
-                                       len(prepend) + 1)
-                    # If the next chunk matches, don't re-traverse, just
-                    # return.
-                    if matches is not None:
-                        placeholders.update(matches)
-                        return placeholders
+                    # None and True discard the character.
+                    if token_action:
+                        self.pop_buffer_token()
+                        self.token_stack[-1].post_end(c)
+                        self.push_token(self.token_stack.pop())
+                        continue
 
-                    # While we haven't matched the next chunk, push to the
-                    # placeholder output storage.
-                    print "Bumping to placeholder %s:" % pattern_token.name, user_token
-                    placeholders[pattern_token.name].append(user_token)
+                    if self.token_stack[-1].alerts(c):
+                        self.pop_buffer_token()
+                        self.token_stack[-1].post_alert(c)
+                        continue
 
-                return placeholders
-
-            optional = pattern_token.startswith("[") and pattern_token.endswith("]")
-            if optional:
-                pattern_token = pattern_token[1:-1]
-                temp_token_index, next_token = enumer_tokens.next()
-                if next_token != pattern_token:
-                    print "Skipped:", pattern_token
-                    return self.matches(
-                            tokens[temp_token_index:],
-                            pattern_offset=pattern_offset + pattern_index -
-                                           len(prepend) + 1)
-                else:
-                    print "Matched optional token:", pattern_token
-                    token_index = temp_token_index
+                if c in token_triggers:
+                    self.pop_buffer_token()
+                    m = token_triggers[c](None)
+                    self.token_stack.append(m)
                     continue
 
-            token_index, next_token = enumer_tokens.next()
-            if pattern_token != next_token:
-                # It's not a match, just drop out.
-                print pattern_token, "did not match", next_token
-                return None
-            print "Found token", next_token
+            if c in PUNCTUATION:
+                self.pop_buffer_token()
+                self.tokens.append(Token(c))
+                continue
+            elif c == " ":
+                self.pop_buffer_token()
+                continue
 
-        return placeholders
+            self.push_buffer(c)
 
-    def run(self, tokens):
-        data = self.matches(tokens)
-        return self.method(data) if data is not None else None
+        self.pop_buffer_token()
 
-
-def expr(pattern, method):
-    clean_pattern = clean(pattern, expression=True)
-    if clean_pattern[-1] in PUNCTUATION:
-        clean_pattern = clean_pattern[:-1]
-    parsed_pattern = []
-    for token in clean_pattern:
-        if not isinstance(token, str):
-            parsed_pattern.append(token)
-            continue
-        if token.startswith("{{") and token.endswith("}}"):
-            t = PlaceholderToken(token[2:-2])
-            parsed_pattern.append(t)
-            continue
-
-        parsed_pattern.append(token)
-
-    return Expression(parsed_pattern, method=method, raw=pattern)
+        print self.tokens
 
 
-def search_for(type, near="me"):
-    """
-    `type`:
-        Can be 'place', 'thing'.
-    `near`:
-        Can be 'me' or a token name.
-    """
-    def wrap(tokens):
-        pass
-    return wrap
+def tokenize_expression(expression, expressive=True):
+    p = ExpressionParser(expression, expressive)
+    p.parse()
+    return p.tokens
 
 
-def action(type, service="google"):
-    """
-    `type`:
-        Can be 'search', 'map'
-    """
-    def wrap(tokens):
-        pass
-    return wrap
+def clean(string, expression=False):
+    """Returns a list of tokens for the given query or expression."""
+    tokens = tokenize_expression(string, expressive=expression)
+    tokens = list(compact(tokens))
 
+    if len(tokens) > QueryTooLongException.MAX_QUERY_LENGTH:
+        raise QueryTooLongException()
+    return tokens
 
-def play(types):
-    """
-    `types`:
-        List of choices from ["genre", "artist", "album", "track"]
-    """
-
-def weather(find_by=None, params=None):
-    pass
-
-
-QUERIES = [
-    # Find places
-    expr("where is the {{place}}", search_for("place")),
-    expr("where is the nearest {{place}}", search_for("place")),
-    expr("where is the closest {{place}}", search_for("place")),
-    expr("find the nearest {{place}}", search_for("place")),
-    expr("find {{thing}} near {{place}}", search_for("thing", near="place")),
-    expr("find {{thing}} in {{place}}", search_for("thing", near="place")),
-
-    # Directions
-    expr("where is {{place}}", action("map")),
-    expr("directions to {{place}}", action("map")),
-    expr("get me directions to {{place}}", action("map")),
-    expr("give me directions to {{place}}", action("map")),
-    expr("take me to {{place}}", action("map")),
-    expr("how do i get to {{place}}", action("map")),
-
-    # Searching
-    expr("look up {{query}} on youtube", action("search", service="youtube")),
-    expr("look up {{query}}", action("search")),
-    expr("search the web for {{query}}", action("search")),
-    expr("search {{service}} for {{query}}", action("search", service=None)),
-    expr("help me find a {{query}}", action("search", service="amazon")),
-    expr("find [me] a {{query}}", action("search", service="amazon")),
-    expr("what's going on with {{query}}", action("search", service="twitter")),
-
-    # Music
-    expr("play some {{music}}", play(["genre", "artist"])),
-    expr("play {{music}}", play(["track", "artist", "album"])),
-    expr("put on some {{music}}", play(["genre", "artist"])),
-    expr("put on {{music}}", play(["artist", "track"])),
-    expr("listen to {{music}}", play(["track", "artist"])),
-
-    #Weather
-    expr("what's (the weather|it) going to be [like] [outside] {{date}}", weather()),
-    expr("what will (the weather|it) be [like [outside]] {{date}}", weather()),
-    expr("will (the weather|it) be {{condition}} [outside]", weather(find_by="condition")),
-    expr("will (the weather|it) be {{condition}} [outside] {{date}}", weather(find_by="condition", params=["date"])),
-    expr("what's the temperature [outside]", weather(find_by="temperature")),
-    expr("what's the temperature [outside] [going to be] {{date}}", weather(find_by="temperature", params=["date"])),
-    expr("what will the temperature be [outside]", weather(find_by="temperature")),
-    expr("what will the temperature be [outside] {{date}}", weather(find_by="temperature", params=["date"])),
-]
-
-
-def match_raw(query):
-    return match(clean(query))
-
-def match(tokens):
-    for query in QUERIES:
-        print "Attempting match against:", query.raw
-        print query.pattern
-        match = query.matches(tokens)
-        if match is not None:
-            return match
