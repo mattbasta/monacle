@@ -1,3 +1,4 @@
+from handlers import time
 from parser import clean, PUNCTUATION
 from tokens import *
 
@@ -150,9 +151,6 @@ def play(types):
 def weather(find_by=None, params=None):
     pass
 
-def time():
-    pass
-
 
 QUERIES = [
     # Find places
@@ -206,4 +204,4 @@ def match(tokens):
         print "Attempting match against:", query.pattern
         match = query.matches(tokens)
         if match is not None:
-            return match
+            return match, query
