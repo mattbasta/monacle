@@ -98,9 +98,9 @@ class Expression(object):
 
         return placeholders
 
-    def run(self, tokens):
+    def run(self, tokens, userinfo=None):
         data = self.matches(tokens)
-        return self.method(data) if data is not None else None
+        return self.method(data, userinfo) if data is not None else None
 
 
 def expr(pattern, method):
@@ -194,9 +194,6 @@ QUERIES = [
 ]
 
 
-def match_raw(query):
-    return match(clean(query))
-
 def match(tokens):
     if isinstance(tokens[-1], Token) and tokens[-1].raw in PUNCTUATION:
         tokens = tokens[:-1]
@@ -205,3 +202,10 @@ def match(tokens):
         match = query.matches(tokens)
         if match is not None:
             return match, query
+
+
+def get_response(query, userinfo):
+    """Return the appropriate response for the query and user info."""
+
+    data, method = match(clean(query))
+    return method.run(data, userinfo)
