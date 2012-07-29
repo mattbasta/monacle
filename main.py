@@ -22,7 +22,7 @@ class MainHandler(tornado.web.RequestHandler):
 class Application(tornado.web.Application):
     def __init__(self, *args, **kwargs):
         super(Application, self).__init__(*args, **kwargs)
-        self.redis = redis.StrictRedis(**REDIS_SETTINGS)
+        self.redis = redis.StrictRedis(**constants.REDIS_SETTINGS)
         self.session_store = sessions.RedisSessionStore(self.redis)
 
 

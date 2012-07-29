@@ -1,6 +1,6 @@
 import time
 
-from responses import StaticResponse
+from models import StaticResponse
 
 
 def time_():

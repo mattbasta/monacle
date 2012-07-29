@@ -11,10 +11,8 @@ class InitialHandler(BaseHandler):
         user = self.current_user()
         if user is None:
             self.write(models.TextQuestion(questions.WHAT_IS_YOUR_NAME,
-                                           endpoint="user.name",
-                                           via=self))
+                                           endpoint="user.name"))
         else:
             self.write(models.TextQuestion(questions.HELLO,
-                                           endpoint="question",
-                                           via=self))
+                                           endpoint="question"))
 

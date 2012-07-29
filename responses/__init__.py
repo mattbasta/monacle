@@ -1,1 +1,0 @@
-from staticresponse import StaticResponse

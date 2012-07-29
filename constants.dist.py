@@ -5,3 +5,7 @@ PROJECT_NAME = "Project Monacle"
 REDIS_SETTINGS = {"host": "localhost",
                   "port": 6379,
                   "db": 0}
+
+FACTUAL_SETTINGS = {"key": "",
+                    "secret": ""}
+
