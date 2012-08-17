@@ -21,3 +21,5 @@ dist
 .ipython
 
 constants.py
+monacle/
+*.stackdump

@@ -1,0 +1,80 @@
+@import url(http://fonts.googleapis.com/css?family=Ropa+Sans:400,400italic);
+@import url(http://fonts.googleapis.com/css?family=Open+Sans:300italic,400,300);
+
+
+body {
+    font-family: 'Open Sans', sans-serif;
+}
+
+header, h1, h2, h3, .info {
+    font-family: "Ropa Sans", sans-serif;
+    letter-spacing: -1.5px;
+}
+
+header, .resp, .info {
+    text-align: left;
+}
+
+header {
+    font-size: 2.5em;
+    color:#999;
+    padding: 0.7em 1em 0.4em;
+}
+
+.resp {
+    padding: 0.5em;
+    margin: 0.6em 1em;
+    font-size: 2.5em;
+    border: 1px solid #ccc;
+    border-radius:0.5em;
+    border-bottom-width:3px;
+}
+.resp h1,
+.resp h2,
+.resp h3 {font-size:1.3em;}
+.resp p {
+    margin: 0;
+    line-height: 1.5em;
+    font-size: 0.8em;
+}
+.resp * {vertical-align:middle;}
+.resp input {
+    font-size:1em;
+    line-height:1.5em;
+    padding:0.08em;
+    border: 1px solid #ccc;
+    border-radius: 0.2em;
+}
+.resp button {
+    background: #eeeeee; /* Old browsers */
+    background: -moz-linear-gradient(top, #eeeeee 0%, #ddd 100%); /* FF3.6+ */
+    background: -webkit-linear-gradient(top, #eeeeee 0%,#ddd 100%); /* Chrome10+,Safari5.1+ */
+    background: linear-gradient(to bottom, #eeeeee 0%,#ddd 100%); /* W3C */
+    border-radius: 0.2em;
+    padding:0.2em;
+    border:0;
+    box-shadow:0 0.1em #bbb;
+    cursor:pointer;
+}
+.resp button:hover {
+    background: #f5f5f5; /* Old browsers */
+    background: -moz-linear-gradient(top, #f5f5f5 0%, #eee 100%); /* FF3.6+ */
+    background: -webkit-linear-gradient(top, #f5f5f5 0%,#eee 100%); /* Chrome10+,Safari5.1+ */
+    background: linear-gradient(to bottom, #f5f5f5 0%,#eee 100%); /* W3C */
+}
+.resp button:disabled {
+    background:#eee;
+    cursor:arrow;
+}
+.resp button:disabled:hover {
+    background:#eee;
+}
+.resp.disabled {opacity:0.3;}
+
+.info {
+    font-size: 1.5em;
+    padding: 1em 1.5em;
+}
+.info p {
+    font-style: oblique;
+}

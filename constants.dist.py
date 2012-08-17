@@ -9,3 +9,4 @@ REDIS_SETTINGS = {"host": "localhost",
 FACTUAL_SETTINGS = {"key": "",
                     "secret": ""}
 
+COOKIE_SECRET = "Change this to something secret"

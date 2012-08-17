@@ -1,15 +1,31 @@
 import tornado.web
 
-import sessions
+from models.base import Response
 
 
 class BaseHandler(tornado.web.RequestHandler):
-    def current_user(self):
-        return (self.session["user"] if
-                self.session and "user" in self.session else
-                None)
 
-    @property
-    def session(self):
-        session_id = self.get_secure_cookie("sid")
-        return sessions.Session(self.application.session_store, session_id)
+    def __init__(self, *args, **kwargs):
+        super(BaseHandler, self).__init__(*args, **kwargs)
+        self.luggage = {}
+
+    def gid(self):
+        return self.prop("gid")
+
+    def has_prop(self, key):
+        return self.get_argument(key, default=None) is not None
+
+    def prop(self, key):
+        return self.get_argument(key)
+
+    def stow(self, key, value):
+        self.luggage[key] = value
+
+    def write(self, data):
+        if isinstance(data, dict) and self.luggage:
+            data.update({"luggage": self.luggage})
+        elif issubclass(type(data), Response):
+            data = data.render()
+        elif not isinstance(data, (str, unicode)):
+            data = unicode(data)
+        super(BaseHandler, self).write(data)

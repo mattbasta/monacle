@@ -1,4 +1,4 @@
-
+from . import ENDPOINTS
 from base import BaseHandler
 import models
 import questions
@@ -8,8 +8,9 @@ class QuestionHandler(BaseHandler):
     """
     Respond to an answer with an appropriate response.
     """
-    def get(self):
-        user = self.current_user()
-        if user is None:
+    def get(self, endpoint):
+        if endpoint not in ENDPOINTS:
+            self.send_error(400)
             return
-        # TODO: IDK
+
+        self.write(ENDPOINTS[endpoint](self))

@@ -1,23 +1,30 @@
+from collections import defaultdict
 import cPickle as pickle
-from uuid import uuid4
 import time
+from uuid import uuid4
 
 
-class RedisSessionStore:
+class SessionStore(object):
 
-    def __init__(self, redis_connection, **options):
+    def __init__(self, **options):
         self.options = {
             'key_prefix': 'session',
             'expire': 7200,
         }
         self.options.update(options)
-        self.redis = redis_connection
 
     def prefixed(self, sid):
         return '%s:%s' % (self.options['key_prefix'], sid)
 
     def generate_sid(self, ):
         return uuid4().get_hex()
+
+
+class RedisSessionStore(SessionStore):
+
+    def __init__(self, redis_connection, *args, **kwargs):
+        self.redis = redis_connection
+        super(RedisSessionStore, self).__init__(*args, **kwargs)
 
     def get_session(self, sid, name):
         data = self.redis.hget(self.prefixed(sid), name)
@@ -34,7 +41,26 @@ class RedisSessionStore:
         self.redis.delete(self.prefixed(sid))
 
 
-class Session:
+class MemorySessionStore(SessionStore):
+    data = defaultdict(Session)
+
+    def get_session(self, sid, name):
+        sid = self.prefixed(sid)
+        data = MemorySessionStore.data[sid].get(name)
+        return pickle.loads(data) if data else None
+
+    def set_session(self, sid, session_data, name):
+        sid = self.prefixed(sid)
+        MemorySessionStore.data[sid][name] = pickle.dumps(session_data)
+
+    def delete_session(self, sid):
+        sid = self.prefixed(sid)
+        if sid not in MemorySessionStore.data:
+            return
+        del MemorySessionStore.data[sid]
+
+
+class Session(object):
 
     def __init__(self, session_store, sessionid=None):
         self._store = session_store

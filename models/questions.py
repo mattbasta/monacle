@@ -26,4 +26,3 @@ class ChoicesQuestion(Question):
 
     def _render(self):
         return {"type": "choices", "choices": self.choices}
-
