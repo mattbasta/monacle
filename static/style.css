@@ -64,7 +64,7 @@ header {
 }
 .resp button:disabled {
     background:#eee;
-    cursor:arrow;
+    cursor:default;
 }
 .resp button:disabled:hover {
     background:#eee;
