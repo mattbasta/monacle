@@ -1,7 +1,9 @@
-from . import ENDPOINTS
+from . import endpoint, ENDPOINTS
 from base import BaseHandler
+from initial import BASE_QUESTION
 import models
-import questions
+import questiontext
+from regex.query_parser import get_response
 
 
 class QuestionHandler(BaseHandler):
@@ -14,3 +16,15 @@ class QuestionHandler(BaseHandler):
             return
 
         self.write(ENDPOINTS[endpoint](self))
+
+
+@endpoint("question")
+def question_endpoint(request):
+    query = request.prop("response")
+    responses = models.MultiResponse()
+    try:
+        responses.push(get_response(query, request))
+    except Exception:
+        responses.push(models.StaticResponse(questiontext.SORRY))
+    responses.push(models.TextQuestion(questiontext.ANYTHING_ELSE, endpoint="question"))
+    return responses

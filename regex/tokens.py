@@ -21,11 +21,14 @@ class Token(object):
     def post_end(self, c):
         pass
 
+    def __unicode__():
+        return unicode(self.raw)
+
     def __str__(self):
-        return '<Token value="%s" />' % self.raw
+        return str(self.raw)
 
     def __repr__(self):
-        return self.__str__()
+        return '<Token value="%s" />' % self.raw
 
 
 class TokenContainer(Token):

@@ -1,3 +1,5 @@
+import json
+
 import tornado.web
 
 from models.base import Response
@@ -22,10 +24,12 @@ class BaseHandler(tornado.web.RequestHandler):
         self.luggage[key] = value
 
     def write(self, data):
+        if issubclass(type(data), Response):
+            data = data.render()
         if isinstance(data, dict) and self.luggage:
             data.update({"luggage": self.luggage})
-        elif issubclass(type(data), Response):
-            data = data.render()
+        if isinstance(data, dict):
+            data = json.dumps(data)
         elif not isinstance(data, (str, unicode)):
             data = unicode(data)
         super(BaseHandler, self).write(data)

@@ -19,21 +19,32 @@ function ajax_wrap(url, success_callback, failure_callback) {
 }
 function json_wrap(url, success_callback, data) {
     function success(data) {
-        if("luggage" in data)
-            reqdata = $.extend(reqdata, data.luggage);
-        success_callback.apply(this, [data]);
+
     }
     if(!data)
         data = {};
     $.ajax({
         url: url,
+        cache: false,
         dataType: "json",
         data: $.extend(true, {uid: globid}, data, reqdata),
-        success: success
+        success: function(data) {
+            if("luggage" in data) {
+                reqdata = $.extend(reqdata, data.luggage);
+                window.localStorage["reqdata"] = JSON.stringify(reqdata);
+            }
+            success_callback.apply(this, [data]);
+        }
     });
 }
 
 function handleQuestion(data) {
+    if(data.type == "multi") {
+        for(var i in data.responses)
+            handleQuestion(data.responses[i]);
+        return;
+    }
+
     $("#initial_info").hide();
     var wrapper = $("<div>");
     wrapper.addClass("resp");
@@ -84,7 +95,7 @@ $(function() {
     );
 
     if("reqdata" in window.localStorage)
-        reqdata = window.localStorage["reqdata"]
+        reqdata = JSON.parse(window.localStorage["reqdata"]);
     else
         reqdata = {};
 

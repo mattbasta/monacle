@@ -23,6 +23,8 @@ class Expression(object):
         if not toks_to_iterate:
             return None
 
+        print toks_to_iterate, "." * 20
+
         if pattern_offset:
             print "New offset:", pattern_offset
             print "New tokens:", tokens
@@ -48,11 +50,23 @@ class Expression(object):
                 print "Found placeholder, matching deeper..."
                 # Start churning user tokens until we can start forward
                 # matching.
+                pat_offset = pattern_offset + pattern_index - len(prepend) + 1
+
+                # If we end the pattern with a placeholder, just return the
+                # rest of the values as the placeholder
+                print pat_offset, len(self.pattern)
+                if pat_offset == len(self.pattern):
+                    for i, user_token in enumer_tokens:
+                        placeholders[pattern_token.raw].append(user_token)
+                    return placeholders
+
                 for i, user_token in enumer_tokens:
+                    # print "subm", tokens[i:]
+                    # print "adm", pattern_offset + pattern_index - len(prepend) + 1
+                    # print "untm", self.pattern
                     matches = self.matches(
                         tokens[i:],
-                        pattern_offset=pattern_offset + pattern_index -
-                                       len(prepend) + 1)
+                        pattern_offset=pat_offset)
                     # If the next chunk matches, don't re-traverse, just
                     # return.
                     if matches is not None:
@@ -85,6 +99,8 @@ class Expression(object):
                 token_index, next_token = enumer_tokens.next()
             except StopIteration:
                 return placeholders
+
+            print pattern_token, next_token
 
             if isinstance(pattern_token, SinglePlaceholderToken):
                 placeholders[pattern_token.raw] = [next_token]
@@ -208,4 +224,4 @@ def get_response(query, userinfo):
     """Return the appropriate response for the query and user info."""
 
     data, method = match(clean(query))
-    return method.run(data, userinfo)
+    return method.method(data, userinfo)

@@ -1,7 +1,7 @@
 import os
 import uuid
 
-import redis
+#import redis
 import tornado.ioloop
 import tornado.template as template
 import tornado.web
