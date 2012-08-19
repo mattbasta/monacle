@@ -31,14 +31,12 @@ class Expression(object):
 
         for pattern_index, pattern_token in enumerate(toks_to_iterate):
             if isinstance(pattern_token, MultiToken):
-                print "Hit subtoken block:", pattern_token
+                print "Hit subtoken block:", repr(pattern_token)
                 for subtoken in pattern_token.branches:
-                    print "Testing subtoken", subtoken
                     matches = self.matches(
                             tokens[token_index + 1:],
-                            pattern_offset=pattern_offset + pattern_index -
-                                           len(prepend) + 1,
-                            prepend=subtoken)
+                            pattern_offset=pattern_offset + pattern_index + 1,
+                            prepend=subtoken + prepend[pattern_index + 1:])
                     if matches is not None:
                         placeholders.update(matches)
                         return placeholders
@@ -75,17 +73,19 @@ class Expression(object):
                 return None
 
             if isinstance(pattern_token, OptionalToken):
+                print "Testing optional branch"
                 matches = self.matches(
                         tokens[token_index + 1:],
                         pattern_offset=pattern_offset + pattern_index -
                                        len(prepend) + 1,
                         prepend=pattern_token.contents)
                 if matches is None:
-                    print "Skipped:", pattern_token
+                    print "Skipped:", repr(pattern_token)
                     return self.matches(
                             tokens[token_index + 1:],
                             pattern_offset=pattern_offset + pattern_index -
-                                           len(prepend) + 1)
+                                           len(prepend) + 1,
+                            prepend=prepend[pattern_index + 1:])
                 else:
                     placeholders.update(matches)
                     return placeholders
@@ -97,13 +97,13 @@ class Expression(object):
 
             if isinstance(pattern_token, SinglePlaceholderToken):
                 placeholders[pattern_token.raw] = [next_token]
-                print "Found single placeholder", next_token.raw
+                print "Found single placeholder:", next_token.raw
             elif pattern_token.raw != next_token.raw:
                 # It's not a match, just drop out.
                 print pattern_token.raw, "did not match", next_token.raw
                 return None
             else:
-                print "Found token", next_token.raw
+                print "Found token:", next_token.raw
 
         return placeholders
 
@@ -207,6 +207,7 @@ def match(tokens):
     if isinstance(tokens[-1], Token) and tokens[-1].raw in PUNCTUATION:
         tokens = tokens[:-1]
     for query in QUERIES:
+        print "~" * 72
         print "Attempting match against:", query.pattern
         match = query.matches(tokens)
         if match is not None:
