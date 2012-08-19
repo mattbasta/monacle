@@ -29,6 +29,7 @@ class BaseHandler(tornado.web.RequestHandler):
         if isinstance(data, dict) and self.luggage:
             data.update({"luggage": self.luggage})
         if isinstance(data, dict):
+            print data
             data = json.dumps(data)
         elif not isinstance(data, (str, unicode)):
             data = unicode(data)

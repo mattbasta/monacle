@@ -4,6 +4,7 @@
 
 body {
     font-family: 'Open Sans', sans-serif;
+    -webkit-font-smoothing: antialiased;
 }
 
 header, h1, h2, h3, .info {
@@ -77,4 +78,34 @@ header {
 }
 .info p {
     font-style: oblique;
+}
+
+
+.resp time,
+.resp em {
+    font-size: 0.8em;
+    border: 1px solid #EEE;
+    padding: 0.1em 0.3em;
+    border-radius: 0.2em;
+    line-height: 2.05em;
+    vertical-align: top;
+}
+.resp em {
+    font-style: normal;
+}
+.resp time {
+}
+.resp time b {
+    line-height: 2em;
+    font-weight: normal;
+    text-decoration: blink;
+    -webkit-animation: blink 2s linear infinite;
+    vertical-align: top;
+}
+
+@-webkit-keyframes blink {
+    0% { opacity: 1; }
+    50% { opacity: 1; }
+    50.01% { opacity: 0; }
+    100% { opacity: 0; }
 }

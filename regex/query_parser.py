@@ -1,4 +1,5 @@
-from handlers import time
+from handlers import time, find_location, find_venue
+import helpers
 from parser import clean, PUNCTUATION
 from tokens import *
 
@@ -22,8 +23,6 @@ class Expression(object):
         toks_to_iterate = prepend + tuple(self.pattern[pattern_offset:])
         if not toks_to_iterate:
             return None
-
-        print toks_to_iterate, "." * 20
 
         if pattern_offset:
             print "New offset:", pattern_offset
@@ -54,16 +53,12 @@ class Expression(object):
 
                 # If we end the pattern with a placeholder, just return the
                 # rest of the values as the placeholder
-                print pat_offset, len(self.pattern)
                 if pat_offset == len(self.pattern):
                     for i, user_token in enumer_tokens:
                         placeholders[pattern_token.raw].append(user_token)
                     return placeholders
 
                 for i, user_token in enumer_tokens:
-                    # print "subm", tokens[i:]
-                    # print "adm", pattern_offset + pattern_index - len(prepend) + 1
-                    # print "untm", self.pattern
                     matches = self.matches(
                         tokens[i:],
                         pattern_offset=pat_offset)
@@ -77,7 +72,7 @@ class Expression(object):
                     # placeholder output storage.
                     placeholders[pattern_token.raw].append(user_token)
 
-                return placeholders
+                return None
 
             if isinstance(pattern_token, OptionalToken):
                 matches = self.matches(
@@ -99,8 +94,6 @@ class Expression(object):
                 token_index, next_token = enumer_tokens.next()
             except StopIteration:
                 return placeholders
-
-            print pattern_token, next_token
 
             if isinstance(pattern_token, SinglePlaceholderToken):
                 placeholders[pattern_token.raw] = [next_token]
@@ -143,7 +136,7 @@ def search_for(type, near="me"):
     `near`:
         Can be 'me' or a token name.
     """
-    def wrap(tokens):
+    def wrap(data, request):
         pass
     return wrap
 
@@ -153,7 +146,7 @@ def action(type, service="google"):
     `type`:
         Can be 'search', 'map'
     """
-    def wrap(tokens):
+    def wrap(data, request):
         pass
     return wrap
 
@@ -170,14 +163,14 @@ def weather(find_by=None, params=None):
 
 QUERIES = [
     # Find places
-    expr("(where is|find) [(a|an|the)] [(nearest|closest)] {{place}}", search_for("place")),
-    expr("(where is|find) [(a|an|the)] {{thing}} (near|by) [the] {{place}}", search_for("thing", near="place")),
+    expr("where [[in] the (world|hell|fuck)] am i", find_location),
+    expr("(where (is|are|can i find) [there]|find) [(a|an)] {{place}} (near|by|in|to) {{near}}", find_venue),
+    expr("(where (is|are|can i find)|find) [(a|an|the)] [(nearest|closest)] {{place}}", find_location),
 
     # Directions
-    expr("where is {{place}}", action("map")),
-    expr("find [(a way|directions) to] {{place}}", action("map")),
-    expr("(get|give me) directions (to|for) {{place}}", action("map")),
-    expr("(how do i get|take me) to {{place}}", action("map")),
+    expr("find [(a way|directions) to] {{place}}", find_location),
+    expr("(get|give me) directions (to|for) {{place}}", find_location),
+    expr("(how do i get|take me) to {{place}}", find_location),
 
     # Searching
     expr("look up {{query}} [on {{service}}]", action("search")),
@@ -223,5 +216,8 @@ def match(tokens):
 def get_response(query, userinfo):
     """Return the appropriate response for the query and user info."""
 
-    data, method = match(clean(query))
+    m = match(clean(query))
+    if not m:
+        return None
+    data, method = m
     return method.method(data, userinfo)

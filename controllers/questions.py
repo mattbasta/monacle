@@ -21,10 +21,16 @@ class QuestionHandler(BaseHandler):
 @endpoint("question")
 def question_endpoint(request):
     query = request.prop("response")
+    resp = get_response(query, request)
     responses = models.MultiResponse()
-    try:
-        responses.push(get_response(query, request))
-    except Exception:
+
+    if not resp:
         responses.push(models.StaticResponse(questiontext.SORRY))
+    else:
+        try:
+            responses.push(resp)
+        except Exception as e:
+            print e
+            responses.push(models.StaticResponse(questiontext.SORRY))
     responses.push(models.TextQuestion(questiontext.ANYTHING_ELSE, endpoint="question"))
     return responses

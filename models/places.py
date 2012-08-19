@@ -2,22 +2,22 @@ from base import Response
 
 
 class PlaceResponse(Response):
-    def __init__(self, name, address=None, locality=None, region=None,
-                 country=None):
-        self.metadata = {}
-
-        self.name = name
-        self.address = address
-        self.locality = locality
-        self.region = region
-        self.country = country
+    def __init__(self, ob):
+        self.ob = ob
 
     def render(self):
-        return {"type": "place",
-                "name": self.name,
-                "address": self.address,
-                "locality": self.locality,
-                "region": self.region,
-                "country": self.country,
-                "metadata": self.metadata}
+        data = {"type": "place"}
+        render = self.ob.render()
+        data.update(render)
 
+        if "address" in render:
+            data["zoom"] = 13
+        elif "locality" in render:
+            data["zoom"] = 11
+        elif "region" in render:
+            data["zoom"] = 6
+        else:
+            # Lat/Lon only
+            data["zoom"] = 12
+
+        return data

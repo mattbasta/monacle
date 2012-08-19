@@ -2,7 +2,7 @@ ENDPOINTS = {}
 
 
 def endpoint(name):
-    def wrap(func):
+    def decorator(func):
         ENDPOINTS[name] = func
         return func
-    return wrap
+    return decorator

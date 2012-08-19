@@ -52,9 +52,9 @@ class OptionalToken(TokenContainer):
     def ends(self, c):
         return c == "]"
 
-    def __str__(self):
+    def __repr__(self):
         return '<OptionalToken>%s</OptionalToken>' % \
-                "".join(map(str, self.contents))
+                "".join(map(repr, self.contents))
 
 
 class MultiToken(TokenContainer):
@@ -84,9 +84,9 @@ class MultiToken(TokenContainer):
             self.contents = None
             return True
 
-    def __str__(self):
+    def __repr__(self):
         return '<MultiToken><Branch>%s</Branch></MultiToken>' % \
-                "</Branch><Branch>".join(map(str, self.branches))
+                "</Branch><Branch>".join(map(repr, self.branches))
 
 
 class PlaceholderToken(TokenContainer):
@@ -94,10 +94,10 @@ class PlaceholderToken(TokenContainer):
     def ends(self, c):
         return False
 
-    def __str__(self):
+    def __repr__(self):
         return '<Placeholder />'
 
 class SinglePlaceholderToken(PlaceholderToken):
     """A placeholder token for a single token rather than a collection."""
-    def __str__(self):
+    def __repr__(self):
         return '<SinglePlaceholder />'
