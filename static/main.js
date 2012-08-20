@@ -131,6 +131,8 @@ $(function() {
         '<input type="text" name="response" x-webkit-speech /> <button>&raquo;</button>'
     );
     templates.place = _.template(
+        '<h1><%= name %></h1>' +
+        '<% if(address) { %><p><b><%= address %></b>, <%= place.locality %>, <%= place.region %></p><% } %>' +
         '<img src="http://maps.googleapis.com/maps/api/staticmap?' +
         'center=<%= lat %>,<%= lon %>&zoom=<%= zoom %>&size=300x300&' +
         'markers=color:red|<%= lat %>,<%= lon %>&' +

@@ -136,6 +136,9 @@ def get_place(query, request, near="here", limit=1, secondary=False):
     """
     print "PLACES: Getting place for", query
     near = get_location(near, request)
+
+    query = query.strip()
+
     q = geographies.search(query).filters({"name": {"$search": query}})
     q = q.limit(PLACE_LIMIT_MIN if limit <= PLACE_LIMIT_MIN else limit)
 
@@ -165,6 +168,10 @@ def get_place(query, request, near="here", limit=1, secondary=False):
 
     # We have to do this until Factual starts letting us properly geo-sort.
     results = map(process, results)
+    exact_results = filter(lambda x: x.name.lower() == query.lower(),
+                           results)
+    if exact_results:
+        results = exact_results
     if near:
         near_loc = near.coords()
         _dd = lambda x: _dist(near_loc, x.coords())

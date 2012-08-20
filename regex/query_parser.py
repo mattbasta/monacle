@@ -8,35 +8,28 @@ class Expression(object):
     """A representation of a query used for pattern matching."""
 
     def __init__(self, pattern, method=None, raw=None):
-        self.pattern = pattern
+        self.pattern = tuple(pattern)
         self.method = method
         self.raw = raw
 
-    def matches(self, tokens, pattern_offset=0, prepend=None):
-        if prepend is None:
-            prepend = ()
+    def matches(self, tokens, pattern):
+        if pattern is None:
+            return None
 
         enumer_tokens = enumerate(tokens)
         placeholders = {}
         token_index = -1
 
-        toks_to_iterate = prepend + tuple(self.pattern[pattern_offset:])
-        if not toks_to_iterate:
-            return None
+        print "New tokens:", tokens
+        print "New pattern tokens:", pattern
 
-        if pattern_offset:
-            print "New offset:", pattern_offset
-            print "New tokens:", tokens
-            print "New pattern tokens:", toks_to_iterate
-
-        for pattern_index, pattern_token in enumerate(toks_to_iterate):
+        for pattern_index, pattern_token in enumerate(pattern):
             if isinstance(pattern_token, MultiToken):
                 print "Hit subtoken block:", repr(pattern_token)
                 for subtoken in pattern_token.branches:
                     matches = self.matches(
                             tokens[token_index + 1:],
-                            pattern_offset=pattern_offset + pattern_index + 1,
-                            prepend=subtoken + prepend[pattern_index + 1:])
+                            subtoken + pattern[pattern_index + 1:])
                     if matches is not None:
                         placeholders.update(matches)
                         return placeholders
@@ -45,21 +38,19 @@ class Expression(object):
             if isinstance(pattern_token, PlaceholderToken):
                 placeholders[pattern_token.raw] = []
                 print "Found placeholder, matching deeper..."
-                # Start churning user tokens until we can start forward
-                # matching.
-                pat_offset = pattern_offset + pattern_index - len(prepend) + 1
 
                 # If we end the pattern with a placeholder, just return the
                 # rest of the values as the placeholder
-                if pat_offset == len(self.pattern):
+                if pattern_index + 1 == len(pattern):
                     for i, user_token in enumer_tokens:
                         placeholders[pattern_token.raw].append(user_token)
                     return placeholders
 
+                # Start churning user tokens until we can start forward
+                # matching.
                 for i, user_token in enumer_tokens:
                     matches = self.matches(
-                        tokens[i:],
-                        pattern_offset=pat_offset)
+                        tokens[i:], pattern[pattern_index + 1:])
                     # If the next chunk matches, don't re-traverse, just
                     # return.
                     if matches is not None:
@@ -76,16 +67,12 @@ class Expression(object):
                 print "Testing optional branch"
                 matches = self.matches(
                         tokens[token_index + 1:],
-                        pattern_offset=pattern_offset + pattern_index -
-                                       len(prepend) + 1,
-                        prepend=pattern_token.contents)
+                        pattern_token.contents + pattern[pattern_index + 1:])
                 if matches is None:
                     print "Skipped:", repr(pattern_token)
                     return self.matches(
                             tokens[token_index + 1:],
-                            pattern_offset=pattern_offset + pattern_index -
-                                           len(prepend) + 1,
-                            prepend=prepend[pattern_index + 1:])
+                            pattern[pattern_index + 1:])
                 else:
                     placeholders.update(matches)
                     return placeholders
@@ -107,9 +94,8 @@ class Expression(object):
 
         return placeholders
 
-    def run(self, tokens, userinfo=None):
-        data = self.matches(tokens)
-        return self.method(data, userinfo) if data is not None else None
+    def run(self, tokens):
+        return self.matches(tokens, self.pattern)
 
 
 def expr(pattern, method):
@@ -165,6 +151,7 @@ QUERIES = [
     # Find places
     expr("where [[in] the (world|hell|fuck)] am i", find_location),
     expr("(where (is|are|can i find) [there]|find) [(a|an)] {{place}} (near|by|in|to) {{near}}", find_venue),
+    expr("find [(a|an|the)] {{place}} ((closest|nearest) to|by|in) {{near}}", find_venue),
     expr("(where (is|are|can i find)|find) [(a|an|the)] [(nearest|closest)] {{place}}", find_location),
 
     # Directions
@@ -209,7 +196,7 @@ def match(tokens):
     for query in QUERIES:
         print "~" * 72
         print "Attempting match against:", query.pattern
-        match = query.matches(tokens)
+        match = query.run(tokens)
         if match is not None:
             return match, query
 

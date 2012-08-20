@@ -109,3 +109,20 @@ header {
     50.01% { opacity: 0; }
     100% { opacity: 0; }
 }
+
+.resp.place h1 {
+    font-size: 1em;
+    font-family: 'Open Sans', sans-serif;
+    font-weight: 600;
+    -webkit-font-smoothing: antialiased;
+}
+.resp.place p {
+    color: #bbb;
+    font-size: 0.6em;
+}
+.resp.place p b {
+    color: #666;
+    font-weight: normal;
+    line-height: 1em;
+    vertical-align: baseline;
+}

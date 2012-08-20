@@ -8,7 +8,10 @@ def find_location(data, request):
     query = data.get("place", "here")
     loc = get_location(query, request, full_object=True)
     if loc:
-        return PlaceResponse(loc)
+        resp = PlaceResponse(loc).render()
+        if query == "here":
+            resp["name"] = "Your location"
+        return resp
 
     # Try again, but this time, search the full set of places (the above only
     # searches primary places.

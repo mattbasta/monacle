@@ -21,4 +21,5 @@ class MultiResponse(Response):
 
     def render(self):
         return {"type": "multi",
-                "responses": [r.render() for r in self.responses]}
+                "responses": [r.render() if isinstance(r, Response) else r for
+                              r in self.responses]}
